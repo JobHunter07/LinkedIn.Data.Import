@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/LinkedIn.Data.Import/LinkedIn.Data.Import.csproj" />
+    <Project Path="src/LinkedIn.Data.Import.Cli/LinkedIn.Data.Import.Cli.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/LinkedIn.Data.Import.Tests/LinkedIn.Data.Import.Tests.csproj" />

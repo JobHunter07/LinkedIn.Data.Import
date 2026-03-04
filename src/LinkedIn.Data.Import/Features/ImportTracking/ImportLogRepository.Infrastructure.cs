@@ -39,4 +39,42 @@ public sealed class ImportLogRepository : IImportLogRepository
                 transaction: transaction,
                 cancellationToken: cancellationToken)).ConfigureAwait(false);
     }
+
+    /// <inheritdoc/>
+    public async Task<ImportLogEntry?> GetByHashAsync(
+        System.Data.IDbConnection connection,
+        string sourceFile,
+        string rowHash,
+        CancellationToken cancellationToken = default)
+    {
+        var row = await connection.QueryFirstOrDefaultAsync<dynamic>(
+            new CommandDefinition(
+                """
+                SELECT id, source_file, row_hash, imported_at 
+                FROM import_log 
+                WHERE source_file = @sourceFile AND row_hash = @rowHash
+                """,
+                new { sourceFile, rowHash },
+                cancellationToken: cancellationToken)).ConfigureAwait(false);
+
+        if (row is null)
+            return null;
+
+        // Handle potential DateTimeOffset parsing issues across different databases
+        DateTimeOffset importedAt;
+        if (row.imported_at is DateTimeOffset dto)
+            importedAt = dto;
+        else if (row.imported_at is string str)
+            importedAt = DateTimeOffset.Parse(str);
+        else
+            importedAt = (DateTimeOffset)row.imported_at;
+
+        return new ImportLogEntry
+        {
+            Id = row.id,
+            SourceFile = row.source_file,
+            RowHash = row.row_hash,
+            ImportedAt = importedAt
+        };
+    }
 }

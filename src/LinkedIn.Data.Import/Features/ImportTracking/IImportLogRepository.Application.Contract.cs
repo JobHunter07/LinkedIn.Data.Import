@@ -26,4 +26,14 @@ public interface IImportLogRepository
         string rowHash,
         DateTimeOffset importedAt,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the import log entry for a specific row hash and source file.
+    /// Used for diagnostic reporting to show when a duplicate was first imported.
+    /// </summary>
+    Task<ImportLogEntry?> GetByHashAsync(
+        System.Data.IDbConnection connection,
+        string sourceFile,
+        string rowHash,
+        CancellationToken cancellationToken = default);
 }

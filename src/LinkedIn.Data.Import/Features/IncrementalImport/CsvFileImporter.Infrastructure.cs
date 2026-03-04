@@ -155,6 +155,18 @@ public sealed class CsvFileImporter : ICsvFileImporter
                 if (existingHashes.Contains(hash))
                 {
                     fileResult.SkippedCount++;
+
+                    // Collect up to 3 sample skipped records per file for diagnostic reporting
+                    if (fileResult.SkippedSamples.Count < 3)
+                    {
+                        fileResult.SkippedSamples.Add(new Shared.SkippedRecordSample
+                        {
+                            Hash = hash,
+                            ColumnNames = columnNames,
+                            FieldValues = values
+                        });
+                    }
+
                     continue;
                 }
 

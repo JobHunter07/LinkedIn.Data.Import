@@ -17,6 +17,24 @@ public sealed class FileImportResult
     /// <summary>Number of rows skipped because they were already in the import log.</summary>
     public int SkippedCount { get; set; }
 
+    /// <summary>Sample records that were skipped (for diagnostic reporting).</summary>
+    public List<SkippedRecordSample> SkippedSamples { get; } = [];
+
     /// <summary>Errors that occurred while processing this file.</summary>
     public List<ImportError> Errors { get; } = [];
+}
+
+/// <summary>
+/// Represents a sample of a skipped record with its hash and field values.
+/// </summary>
+public sealed class SkippedRecordSample
+{
+    /// <summary>The SHA-256 hash of the skipped record.</summary>
+    public required string Hash { get; init; }
+
+    /// <summary>Column names for this record.</summary>
+    public required string[] ColumnNames { get; init; }
+
+    /// <summary>Field values from the CSV row that was skipped.</summary>
+    public required string[] FieldValues { get; init; }
 }

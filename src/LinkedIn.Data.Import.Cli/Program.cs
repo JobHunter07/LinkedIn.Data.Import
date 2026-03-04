@@ -15,10 +15,9 @@ var config = new ConfigurationBuilder()
     .Build();
 
 // Build the import pipeline
+// Note: Extraction happens inside ImportStep via the existing LinkedInImporter
 var pipeline = new ImportPipeline()
     .AddStep(new ConfigurationStep(config))
-    .AddStep(new ExtractionStep())
-    .AddStep(new DeduplicationStep())
     .AddStep(new ImportStep());
 
 // Execute the pipeline

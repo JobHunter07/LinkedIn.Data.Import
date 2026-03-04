@@ -5,7 +5,8 @@ using Microsoft.Extensions.Hosting;
 namespace LinkedIn.Data.Import.Cli.Pipeline.Steps;
 
 /// <summary>
-/// Step 4: Build and run the import host using the hosted service.
+/// Step 2: Build and run the import host.
+/// The existing LinkedInImporter handles ZIP discovery, extraction, and CSV import.
 /// </summary>
 public sealed class ImportStep : IPipelineStep
 {
@@ -13,14 +14,14 @@ public sealed class ImportStep : IPipelineStep
     {
         try
         {
-            // Create ImportOptions from context
+            // Create ImportOptions pointing to the original ZIP directory
             var options = new ImportOptions
             {
-                ZipRootDirectory = context.ExtractionDirectory,
+                ZipRootDirectory = context.ZipRootDirectory,
                 ConnectionString = context.ConnectionString
             };
 
-            // Build and run the host (existing logic from Program.cs)
+            // Build and run the host - the LinkedInImporter will handle everything
             using var host = HostBuilder.BuildHost(options);
             await host.RunAsync(cancellationToken);
 

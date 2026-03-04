@@ -81,7 +81,7 @@ internal static class CsvDeduplicationWizard
         // Collect files to process
         var filesToProcess = File.Exists(inputPath)
             ? [inputPath]
-            : Directory.GetFiles(inputPath, "*.csv", SearchOption.TopDirectoryOnly);
+            : Directory.GetFiles(inputPath, "*.csv", SearchOption.AllDirectories);
 
         if (filesToProcess.Length == 0)
         {

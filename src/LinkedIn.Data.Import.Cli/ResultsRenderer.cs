@@ -53,7 +53,6 @@ internal static class ResultsRenderer
         if (result.Errors.Count > 0)
         {
             AnsiConsole.WriteLine();
-
             var lines = result.Errors.Select(e =>
                 $"[yellow][[{e.Code}]][/] [dim]{Markup.Escape(e.SourceFile)}[/] — {Markup.Escape(e.Message)}");
 

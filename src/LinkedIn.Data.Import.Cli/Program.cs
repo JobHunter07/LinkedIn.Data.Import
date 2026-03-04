@@ -1,9 +1,8 @@
-using LinkedIn.Data.Import.Cli.Pipeline;
-using LinkedIn.Data.Import.Cli.Pipeline.Steps;
+using LinkedIn.Data.Import.Cli;
 using Microsoft.Extensions.Configuration;
 
 // ────────────────────────────────────────────────────────────────────────────
-// Program.cs: Entry point - wires up the pipeline and runs it
+// Program.cs: Entry point - wires up dependencies and starts the application
 // ────────────────────────────────────────────────────────────────────────────
 
 // Build configuration
@@ -14,15 +13,10 @@ var config = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-// Build the import pipeline
-// Note: Extraction happens inside ImportStep via the existing LinkedInImporter
-var pipeline = new ImportPipeline()
-    .AddStep(new ConfigurationStep(config))
-    .AddStep(new ImportStep());
+// Create application components
+var settingsManager = new SettingsManager(config);
+var orchestrator = new ImportOrchestrator();
+var controller = new ApplicationController(settingsManager, orchestrator);
 
-// Execute the pipeline
-var context = new ImportContext();
-var result = await pipeline.ExecuteAsync(context);
-
-// Return exit code
-return result.ExitCode;
+// Run the application
+return await controller.RunAsync();

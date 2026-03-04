@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -24,6 +24,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.*" />
     <PackageReference Include="Spectre.Console" Version="0.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Pipeline\Steps\" />
   </ItemGroup>
 
   <PropertyGroup>

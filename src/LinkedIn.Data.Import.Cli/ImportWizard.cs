@@ -22,27 +22,6 @@ internal static class ImportWizard
             "[dim]Import your LinkedIn data export ZIP archives into a SQL Server database.[/]");
         AnsiConsole.WriteLine();
 
-        // ── Option to deduplicate CSVs first ────────────────────────────────────
-        var wantsDedupe = AnsiConsole.Confirm(
-            "[bold]Would you like to deduplicate CSV files before importing?[/]",
-            defaultValue: false);
-
-        if (wantsDedupe)
-        {
-            await CsvDeduplicationWizard.RunAsync();
-            AnsiConsole.WriteLine();
-
-            var continueImport = AnsiConsole.Confirm(
-                "[bold]Continue with import using deduplicated files?[/]",
-                defaultValue: true);
-
-            if (!continueImport)
-            {
-                AnsiConsole.MarkupLine("[yellow]Import cancelled.[/]");
-                Environment.Exit(0);
-            }
-        }
-
         // ── ZIP root directory ──────────────────────────────────────────────
         var defaultZipDir = ImportDefaultsProvider.GetDefaultZipRootDirectory(config);
 

@@ -9,7 +9,16 @@ namespace LinkedIn.Data.Import.Cli;
 /// </summary>
 internal static class CsvDeduplicationWizard
 {
-    internal static async Task RunAsync()
+    /// <summary>
+    /// Runs the deduplication wizard, prompting for paths.
+    /// </summary>
+    internal static Task RunAsync() => RunWithDirectoryAsync(null);
+
+    /// <summary>
+    /// Runs the deduplication wizard using a pre-determined directory.
+    /// </summary>
+    /// <param name="csvDirectory">Directory containing CSVs (if null, will prompt user)</param>
+    internal static async Task RunWithDirectoryAsync(string? csvDirectory)
     {
         // Banner
         AnsiConsole.Write(
@@ -22,21 +31,31 @@ internal static class CsvDeduplicationWizard
             "[dim]Safely remove duplicate rows from CSV files without modifying originals.[/]");
         AnsiConsole.WriteLine();
 
-        // Get input path (file or directory)
-        var inputPath = AnsiConsole.Prompt(
-            new TextPrompt<string>("[bold]Path to CSV file or directory:[/]")
-                .PromptStyle("cyan")
-                .Validate(path =>
-                {
-                    if (File.Exists(path) && path.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
-                        return ValidationResult.Success();
-                    
-                    if (Directory.Exists(path))
-                        return ValidationResult.Success();
-                    
-                    return ValidationResult.Error(
-                        "[red]Path must be a CSV file or directory[/]");
-                }));
+        // Get input path (file or directory) - use provided directory or prompt
+        string inputPath;
+
+        if (!string.IsNullOrWhiteSpace(csvDirectory))
+        {
+            inputPath = csvDirectory;
+            AnsiConsole.MarkupLine($"[cyan]Using directory: {Markup.Escape(csvDirectory)}[/]");
+        }
+        else
+        {
+            inputPath = AnsiConsole.Prompt(
+                new TextPrompt<string>("[bold]Path to CSV file or directory:[/]")
+                    .PromptStyle("cyan")
+                    .Validate(path =>
+                    {
+                        if (File.Exists(path) && path.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                            return ValidationResult.Success();
+
+                        if (Directory.Exists(path))
+                            return ValidationResult.Success();
+
+                        return ValidationResult.Error(
+                            "[red]Path must be a CSV file or directory[/]");
+                    }));
+        }
 
         // Get output directory
         var outputDir = AnsiConsole.Prompt(

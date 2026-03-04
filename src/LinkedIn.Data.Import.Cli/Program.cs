@@ -1,17 +1,12 @@
-using LinkedIn.Data.Import;
-using LinkedIn.Data.Import.Cli;
-using LinkedIn.Data.Import.Features.TableBootstrapping;
-using LinkedIn.Data.Import.Shared;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-
+using LinkedIn.Data.Import.Cli.Pipeline;
+using LinkedIn.Data.Import.Cli.Pipeline.Steps;
 using Microsoft.Extensions.Configuration;
 
-// Build a lightweight configuration so we can read appsettings and user secrets
-// before constructing the host. This allows the wizard to show defaults.
+// ────────────────────────────────────────────────────────────────────────────
+// Program.cs: Entry point - wires up the pipeline and runs it
+// ────────────────────────────────────────────────────────────────────────────
+
+// Build configuration
 var config = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json", optional: true)
@@ -19,39 +14,16 @@ var config = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-// ── Phase 1: Collect options via interactive wizard ─────────────────────────
-ImportOptions options = await ImportWizard.AskAsync(config);
+// Build the import pipeline
+var pipeline = new ImportPipeline()
+    .AddStep(new ConfigurationStep(config))
+    .AddStep(new ExtractionStep())
+    .AddStep(new DeduplicationStep())
+    .AddStep(new ImportStep());
 
-// ── Phase 2: Build the generic host with the collected connection string ─────
-using IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureLogging(logging =>
-    {
-        // Suppress framework noise — Spectre.Console owns the terminal.
-        logging.ClearProviders();
-    })
-    .ConfigureServices((_, services) =>
-    {
-        // Register connection factory so it can be injected into services like ImportHostedService
-        Func<System.Data.IDbConnection> connectionFactory = () => new SqlConnection(options.ConnectionString);
-        services.AddSingleton(connectionFactory);
+// Execute the pipeline
+var context = new ImportContext();
+var result = await pipeline.ExecuteAsync(context);
 
-        services.AddLinkedInImporter(
-            connectionFactory: _ => connectionFactory(),
-            dialectFactory: _ => new SqlServerDialect());
-
-        // Override IEventDispatcher lifetime to Singleton so that ImportHostedService
-        // and the ILinkedInImporter factory both resolve the same dispatcher instance,
-        // allowing the CLI to subscribe its progress handler before ImportAsync runs.
-        services.Replace(
-            ServiceDescriptor.Singleton<IEventDispatcher, InProcessEventDispatcher>());
-
-        // Make ImportOptions available for injection into ImportHostedService.
-        services.AddSingleton(options);
-
-        services.AddHostedService<ImportHostedService>();
-    })
-    .Build();
-
-// ── Phase 3: Run the host (ImportHostedService drives the import and stops the host) ─
-await host.RunAsync();
-return Environment.ExitCode;
+// Return exit code
+return result.ExitCode;

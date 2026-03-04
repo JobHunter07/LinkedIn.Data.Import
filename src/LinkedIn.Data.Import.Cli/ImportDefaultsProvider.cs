@@ -11,4 +11,12 @@ public static class ImportDefaultsProvider
 
         return config["Import:ConnectionString"];
     }
+
+    public static string? GetDefaultZipRootDirectory(IConfiguration config)
+    {
+        if (config is null)
+            return null;
+
+        return config["Import:ZipRootDirectory"];
+    }
 }

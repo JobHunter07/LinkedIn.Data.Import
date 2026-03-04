@@ -20,7 +20,7 @@ var config = new ConfigurationBuilder()
     .Build();
 
 // ── Phase 1: Collect options via interactive wizard ─────────────────────────
-ImportOptions options = ImportWizard.Ask(config);
+ImportOptions options = await ImportWizard.AskAsync(config);
 
 // ── Phase 2: Build the generic host with the collected connection string ─────
 using IHost host = Host.CreateDefaultBuilder(args)
@@ -31,8 +31,12 @@ using IHost host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((_, services) =>
     {
+        // Register connection factory so it can be injected into services like ImportHostedService
+        Func<System.Data.IDbConnection> connectionFactory = () => new SqlConnection(options.ConnectionString);
+        services.AddSingleton(connectionFactory);
+
         services.AddLinkedInImporter(
-            connectionFactory: _ => new SqlConnection(options.ConnectionString),
+            connectionFactory: _ => connectionFactory(),
             dialectFactory: _ => new SqlServerDialect());
 
         // Override IEventDispatcher lifetime to Singleton so that ImportHostedService

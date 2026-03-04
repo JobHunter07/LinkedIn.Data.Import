@@ -9,7 +9,7 @@ namespace LinkedIn.Data.Import.Cli;
 /// </summary>
 internal static class ImportWizard
 {
-    internal static ImportOptions Ask()
+    internal static ImportOptions Ask(Microsoft.Extensions.Configuration.IConfiguration config)
     {
         // Banner
         AnsiConsole.Write(
@@ -34,11 +34,29 @@ internal static class ImportWizard
                             $"[red]Directory not found:[/] {Markup.Escape(path)}")));
 
         // ── Connection string ───────────────────────────────────────────────
+        var defaultConnection = ImportDefaultsProvider.GetDefaultConnectionString(config)
+            ?? "Server=.;Database=LinkedInData;Trusted_Connection=True;TrustServerCertificate=True;";
+
         var connectionString = AnsiConsole.Prompt(
             new TextPrompt<string>("[bold]SQL Server connection string:[/]")
                 .PromptStyle("cyan")
-                .DefaultValue(
-                    "Server=.;Database=LinkedInData;Trusted_Connection=True;TrustServerCertificate=True;"));
+                .DefaultValue(defaultConnection));
+
+        // Ask whether to persist selected secrets into user secrets (developer convenience)
+        var save = AnsiConsole.Confirm("Save connection string to user secrets for future runs?");
+
+        if (save)
+        {
+            try
+            {
+                UserSecretsManager.WriteSecret("Import:ConnectionString", connectionString);
+                AnsiConsole.MarkupLine("[green]Saved connection string to user secrets.[/]\n");
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]Failed to save user secret:[/] {ex.Message}\n");
+            }
+        }
 
         AnsiConsole.WriteLine();
 

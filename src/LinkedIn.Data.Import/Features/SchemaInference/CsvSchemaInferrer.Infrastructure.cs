@@ -72,12 +72,23 @@ public sealed class CsvSchemaInferrer : ICsvSchemaInferrer
 
             var tableName = _tableNameDeriver.Derive(csvFilePath);
 
-            var columns = headers.Select((header, i) =>
+            var columns = new List<ColumnDefinition>(headers.Length);
+            var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < headers.Length; i++)
             {
                 _typeDetector.Infer(samples[i], out var sqlType, out var clrType, out var isNullable);
-                var sanitisedName = SanitiseColumnName(header);
-                return new ColumnDefinition(sanitisedName, sqlType, isNullable, clrType);
-            }).ToList();
+                var baseName = SanitiseColumnName(headers[i]);
+                var name = baseName;
+                var suffix = 1;
+                // Ensure column names are unique after sanitisation by appending a numeric suffix when needed.
+                while (usedNames.Contains(name))
+                {
+                    name = baseName + "_" + suffix;
+                    suffix++;
+                }
+                usedNames.Add(name);
+                columns.Add(new ColumnDefinition(name, sqlType, isNullable, clrType));
+            }
 
             var schema = new InferredSchema(tableName, columns);
 

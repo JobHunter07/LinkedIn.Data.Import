@@ -43,12 +43,27 @@ public sealed class TableBootstrapper : ITableBootstrapper
 
             if (isNewlyCreated)
             {
-                // Build DDL: auto-increment id PK + created_at + inferred columns.
+                // Build DDL: dialect-appropriate auto-increment id PK + created_at + inferred columns.
                 var createdAtType = _dialect.NormalizeSqlType("DATETIMEOFFSET");
+
+                var idColumn = _dialect switch
+                {
+                    SqliteDialect => $"{q("id")} INTEGER PRIMARY KEY AUTOINCREMENT",
+                    SqlServerDialect => $"{q("id")} INT IDENTITY(1,1) PRIMARY KEY",
+                    _ => $"{q("id")} BIGINT PRIMARY KEY",
+                };
+
+                var createdAtColumn = _dialect switch
+                {
+                    SqliteDialect => $"{q("created_at")} {createdAtType} NOT NULL DEFAULT CURRENT_TIMESTAMP",
+                    SqlServerDialect => $"{q("created_at")} {createdAtType} NOT NULL DEFAULT SYSDATETIMEOFFSET()",
+                    _ => $"{q("created_at")} {createdAtType} NOT NULL",
+                };
+
                 var parts = new List<string>
                 {
-                    $"{q("id")} INTEGER PRIMARY KEY AUTOINCREMENT",
-                    $"{q("created_at")} {createdAtType} NOT NULL DEFAULT CURRENT_TIMESTAMP",
+                    idColumn,
+                    createdAtColumn,
                 };
 
                 foreach (var col in schema.Columns)

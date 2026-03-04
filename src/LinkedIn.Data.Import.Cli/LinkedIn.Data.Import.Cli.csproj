@@ -17,6 +17,11 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.*" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.*" />
     <PackageReference Include="Spectre.Console" Version="0.*" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.*" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <UserSecretsId>d0c9f3b5-8b8b-4e5a-9c1a-6e2b0d8f1a2b</UserSecretsId>
+  </PropertyGroup>
 
 </Project>

@@ -136,7 +136,11 @@ public sealed class CsvFileImporter : ICsvFileImporter
             csv.ReadHeader();
 
             var headers = csv.HeaderRecord ?? [];
-            var columnNames = headers.Select(h => SanitiseColumnName(h)).ToArray();
+
+            // Use the column names from the inferred schema to ensure they match
+            // the table that was created/updated during inference (handles
+            // disambiguation of duplicate headers performed by the inferrer).
+            var columnNames = schema.Columns.Select(c => c.Name).ToArray();
 
             // Pre-build the INSERT statement.
             var insertSql = BuildInsertSql(schema.TableName, columnNames);
@@ -154,10 +158,52 @@ public sealed class CsvFileImporter : ICsvFileImporter
                     continue;
                 }
 
-                // Insert row.
+                // Insert row. Convert values to the inferred CLR types where
+                // possible to avoid server-side conversion errors.
                 var parameters = new DynamicParameters();
                 for (int i = 0; i < columnNames.Length; i++)
-                    parameters.Add(columnNames[i], values[i]);
+                {
+                    var col = schema.Columns[i];
+                    var raw = values[i];
+
+                    object? paramValue = raw;
+                    if (string.IsNullOrWhiteSpace(raw))
+                    {
+                        // Prefer null for missing/empty values. For non-nullable
+                        // string columns fall back to empty string.
+                        if (col.IsNullable)
+                            paramValue = null;
+                        else if (col.ClrType == typeof(string))
+                            paramValue = string.Empty;
+                        else
+                            paramValue = null;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            if (col.ClrType == typeof(int) && int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var iVal))
+                                paramValue = iVal;
+                            else if (col.ClrType == typeof(long) && long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var lVal))
+                                paramValue = lVal;
+                            else if (col.ClrType == typeof(decimal) && decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var dVal))
+                                paramValue = dVal;
+                            else if (col.ClrType == typeof(bool) && (raw.Equals("1") || raw.Equals("0") || bool.TryParse(raw, out var bVal)))
+                                paramValue = raw == "1" ? true : raw == "0" ? false : bool.Parse(raw);
+                            else if (col.ClrType == typeof(DateTimeOffset) && DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dtoVal))
+                                paramValue = dtoVal;
+                        }
+                        catch
+                        {
+                            // Keep original raw string when conversion fails; the DB
+                            // may accept or reject it depending on schema. We prefer
+                            // to let the row fail than to silently corrupt data.
+                            paramValue = raw;
+                        }
+                    }
+
+                    parameters.Add(columnNames[i], paramValue);
+                }
                 parameters.Add("created_at", DateTimeOffset.UtcNow);
 
                 await connection.ExecuteAsync(

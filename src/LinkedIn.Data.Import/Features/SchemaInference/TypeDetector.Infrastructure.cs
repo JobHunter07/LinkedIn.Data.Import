@@ -28,15 +28,16 @@ public sealed class TypeDetector
         var list = values.ToList();
         var nonEmpty = list.Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
 
+        // Consider a column nullable when any sampled value is empty or whitespace.
+        // This avoids creating NOT NULL constraints when CSVs contain missing cells.
+        isNullable = list.Any(v => string.IsNullOrWhiteSpace(v));
+
         if (nonEmpty.Count == 0)
         {
             sqlType = "NVARCHAR(MAX)";
             clrType = typeof(string);
-            isNullable = true;
             return;
         }
-
-        isNullable = false;
 
         if (nonEmpty.All(v => int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)))
         {

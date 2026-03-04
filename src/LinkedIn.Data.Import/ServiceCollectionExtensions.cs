@@ -36,8 +36,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISqlDialect>(sp =>
             dialectFactory?.Invoke(sp) ?? new SqliteDialect());
 
-        // Event dispatcher — scoped per import run.
-        services.AddTransient<IEventDispatcher, InProcessEventDispatcher>();
+        // Event dispatcher — singleton to ensure all components share the same instance
+        services.AddSingleton<IEventDispatcher, InProcessEventDispatcher>();
 
         // ZIP Ingestion
         services.AddTransient<IZipDiscovery, ZipDiscovery>();
